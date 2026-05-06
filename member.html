@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Artemis II — The Crew</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #02060F;
+    --deep: #050A18;
+    --navy: #0A1428;
+    --gold: #C89B3C;
+    --gold-light: #E8BE6A;
+    --gold-dim: #7A5E22;
+    --steel: #5B7A9E;
+    --mist: #A8BCD4;
+    --white: #EEE9DF;
+    --white-dim: #8C8880;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-heading: 'Cinzel', serif;
+    --font-body: 'Crimson Pro', serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ── STARFIELD ── */
+  canvas#starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 4rem;
+    background: linear-gradient(to bottom, rgba(2,6,15,0.95), transparent);
+    backdrop-filter: blur(4px);
+  }
+  .nav-logo {
+    font-family: var(--font-heading);
+    font-size: 0.9rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--mist);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--gold-light); }
+  .nav-links a.active { color: var(--gold); }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    position: relative;
+    z-index: 1;
+    padding: 14rem 4rem 6rem;
+    overflow: hidden;
+  }
+  .header-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.2s;
+  }
+  .header-eyebrow::before {
+    content: '';
+    width: 2rem; height: 1px;
+    background: var(--gold);
+  }
+  .page-title {
+    font-family: var(--font-display);
+    font-size: clamp(5rem, 12vw, 10rem);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: var(--white);
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.4s;
+  }
+  .page-title span {
+    display: block;
+    color: var(--gold-light);
+    text-shadow: 0 0 60px rgba(200,155,60,0.35);
+  }
+  .page-desc {
+    max-width: 560px;
+    font-size: 1.15rem;
+    color: var(--mist);
+    margin-top: 2rem;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.6s;
+  }
+
+  /* Constellation decoration behind header */
+  .header-constellation {
+    position: absolute;
+    top: 0; right: 0;
+    width: 50%;
+    height: 100%;
+    opacity: 0.25;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    position: relative;
+    z-index: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+    margin: 0 4rem;
+  }
+
+  /* ── MISSION SNAPSHOT ── */
+  .mission-bar {
+    position: relative;
+    z-index: 1;
+    padding: 3rem 4rem;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    background: rgba(10,20,40,0.4);
+    border-top: 1px solid rgba(200,155,60,0.1);
+    border-bottom: 1px solid rgba(200,155,60,0.1);
+  }
+  .mbar-item {
+    padding: 1.5rem;
+    border-right: 1px solid rgba(168,188,212,0.1);
+    text-align: center;
+  }
+  .mbar-item:last-child { border-right: none; }
+  .mbar-val {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    color: var(--gold-light);
+    line-height: 1;
+    letter-spacing: 0.04em;
+    display: block;
+  }
+  .mbar-key {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.18em;
+    color: var(--mist);
+    text-transform: uppercase;
+    margin-top: 0.4rem;
+    display: block;
+  }
+
+  /* ── CREW GRID ── */
+  .crew-section {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 4rem 8rem;
+  }
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .section-label::before {
+    content: '';
+    width: 2rem; height: 1px;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  /* Commander card — full width hero card */
+  .crew-commander {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid rgba(200,155,60,0.2);
+    background: rgba(10,20,40,0.5);
+    margin-bottom: 2rem;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+  .crew-commander:hover { border-color: rgba(200,155,60,0.5); }
+  .crew-commander::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, var(--gold), transparent);
+  }
+
+  .crew-avatar-wrap {
+    position: relative;
+    overflow: hidden;
+    min-height: 400px;
+  }
+  .crew-avatar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* SVG silhouette placeholder styled per astronaut */
+  .avatar-svg {
+    width: 100%;
+    height: 400px;
+  }
+
+  .crew-info {
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .crew-role {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .crew-name {
+    font-family: var(--font-heading);
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1.1;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.5rem;
+  }
+  .crew-agency {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--steel);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(168,188,212,0.12);
+  }
+  .crew-bio {
+    font-size: 1rem;
+    color: var(--mist);
+    line-height: 1.75;
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+  }
+  .crew-milestone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(200,155,60,0.1);
+    border: 1px solid rgba(200,155,60,0.25);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+  }
+  .crew-milestone::before {
+    content: '★';
+    font-size: 0.7rem;
+  }
+
+  .crew-facts {
+    list-style: none;
+    margin-top: 1.5rem;
+  }
+  .crew-facts li {
+    display: flex;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(168,188,212,0.07);
+    font-size: 0.9rem;
+  }
+  .crew-facts li:last-child { border-bottom: none; }
+  .fact-label {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    min-width: 100px;
+    padding-top: 0.05rem;
+  }
+  .fact-val { color: var(--mist); font-weight: 300; }
+
+  /* Remaining three crew — side by side */
+  .crew-trio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+  }
+  .crew-card {
+    background: rgba(10,20,40,0.5);
+    border: 1px solid rgba(168,188,212,0.08);
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .crew-card:hover {
+    border-color: rgba(200,155,60,0.3);
+    background: rgba(15,28,55,0.8);
+  }
+  .crew-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .crew-card:hover::before { opacity: 1; }
+  .card-avatar {
+    height: 260px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-info { padding: 2rem; }
+  .card-role {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.18em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .card-name {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1.15;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.4rem;
+  }
+  .card-agency {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+    color: var(--steel);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(168,188,212,0.1);
+  }
+  .card-bio {
+    font-size: 0.9rem;
+    color: var(--mist);
+    line-height: 1.7;
+    font-weight: 300;
+    margin-bottom: 1rem;
+  }
+  .card-milestone {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    background: rgba(200,155,60,0.08);
+    border: 1px solid rgba(200,155,60,0.2);
+    padding: 0.4rem 0.75rem;
+    display: inline-block;
+  }
+
+  /* ── TRAJECTORY SECTION ── */
+  .trajectory-section {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 4rem 8rem;
+    background: rgba(5,10,24,0.7);
+  }
+  .trajectory-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: end;
+    margin-bottom: 5rem;
+  }
+  .trajectory-header h2 {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    font-weight: 400;
+    color: var(--white);
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+  .trajectory-header p {
+    color: var(--mist);
+    font-size: 1rem;
+    line-height: 1.8;
+    font-weight: 300;
+    font-style: italic;
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 140px;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--gold-dim) 15%, var(--gold-dim) 85%, transparent);
+  }
+  .tl-item {
+    display: grid;
+    grid-template-columns: 140px 40px 1fr;
+    align-items: start;
+    gap: 0;
+    padding: 2rem 0;
+    border-bottom: 1px solid rgba(168,188,212,0.05);
+  }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-day {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-transform: uppercase;
+    text-align: right;
+    padding-right: 1.5rem;
+    padding-top: 0.2rem;
+  }
+  .tl-dot {
+    display: flex;
+    justify-content: center;
+    padding-top: 0.3rem;
+    position: relative;
+    z-index: 1;
+  }
+  .tl-dot-inner {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    background: var(--black);
+    transition: background 0.2s;
+  }
+  .tl-item:hover .tl-dot-inner { background: var(--gold); }
+  .tl-content { padding-left: 1.5rem; }
+  .tl-event {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: 0.03em;
+    margin-bottom: 0.3rem;
+  }
+  .tl-detail {
+    font-size: 0.9rem;
+    color: var(--mist);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ── READINESS SECTION ── */
+  .readiness-section {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 4rem 8rem;
+  }
+  .readiness-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-top: 4rem;
+  }
+  .readiness-item {
+    padding: 2rem 1.5rem;
+    background: rgba(10,20,40,0.5);
+    border: 1px solid rgba(168,188,212,0.07);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .readiness-bar-wrap {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1rem;
+    position: relative;
+  }
+  .readiness-svg { width: 60px; height: 60px; transform: rotate(-90deg); }
+  .r-track { fill: none; stroke: rgba(168,188,212,0.1); stroke-width: 3; }
+  .r-fill { fill: none; stroke: var(--gold); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 1.5s ease; }
+  .r-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--gold-light);
+    font-weight: 700;
+    transform: rotate(90deg);
+  }
+  .readiness-name {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: 0.03em;
+    margin-bottom: 0.5rem;
+  }
+  .readiness-detail {
+    font-size: 0.8rem;
+    color: var(--mist);
+    line-height: 1.6;
+    font-weight: 300;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── BACK LINK / FOOTER ── */
+  .page-footer {
+    position: relative;
+    z-index: 1;
+    padding: 3rem 4rem;
+    border-top: 1px solid rgba(168,188,212,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .back-link {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-decoration: none;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: gap 0.2s;
+  }
+  .back-link:hover { gap: 0.9rem; }
+  .back-link::before { content: '←'; }
+  .footer-note {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--white-dim);
+  }
+
+  /* Reveal animation */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .page-header { padding: 10rem 1.5rem 4rem; }
+    .crew-commander { grid-template-columns: 1fr; }
+    .crew-trio { grid-template-columns: 1fr; }
+    .mission-bar { grid-template-columns: repeat(2, 1fr); padding: 2rem 1.5rem; }
+    .crew-section, .trajectory-section, .readiness-section { padding: 4rem 1.5rem; }
+    .trajectory-header { grid-template-columns: 1fr; gap: 1.5rem; }
+    .readiness-grid { grid-template-columns: repeat(2, 1fr); }
+    .timeline::before { left: 90px; }
+    .tl-item { grid-template-columns: 90px 40px 1fr; }
+    .divider { margin: 0 1.5rem; }
+    .page-footer { padding: 2rem 1.5rem; flex-direction: column; gap: 1rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<!-- Nav -->
+<nav>
+  <a href="index.html" class="nav-logo">NASA / Artemis</a>
+  <ul class="nav-links">
+    <li><a href="artemis-landing.html#mission">Mission</a></li>
+    <li><a href="artemis-landing.html#phases">Phases</a></li>
+    <li><a href="artemis-landing.html#gateway">Gateway</a></li>
+    <li><a href="artemis-landing.html#why">Science</a></li>
+    <li><a href="crew.html" class="active">Crew</a></li>
+  </ul>
+</nav>
+
+<!-- Constellation SVG bg -->
+<div style="position: absolute; top: 0; right: 0; width: 50%; height: 500px; z-index: 0; opacity: 0.15; pointer-events: none;">
+  <svg viewBox="0 0 600 500" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <line x1="80" y1="80" x2="200" y2="140" stroke="#C89B3C" stroke-width="0.5" />
+    <line x1="200" y1="140" x2="320" y2="90" stroke="#C89B3C" stroke-width="0.5" />
+    <line x1="320" y1="90" x2="450" y2="160" stroke="#C89B3C" stroke-width="0.5" />
+    <line x1="450" y1="160" x2="380" y2="260" stroke="#C89B3C" stroke-width="0.5" />
+    <line x1="200" y1="140" x2="380" y2="260" stroke="#C89B3C" stroke-width="0.5" />
+    <line x1="380" y1="260" x2="500" y2="350" stroke="#C89B3C" stroke-width="0.5" />
+    <circle cx="80" cy="80" r="3" fill="#E8BE6A" />
+    <circle cx="200" cy="140" r="4" fill="#E8BE6A" />
+    <circle cx="320" cy="90" r="2.5" fill="#E8BE6A" />
+    <circle cx="450" cy="160" r="3.5" fill="#E8BE6A" />
+    <circle cx="380" cy="260" r="4" fill="#E8BE6A" />
+    <circle cx="500" cy="350" r="2.5" fill="#E8BE6A" />
+    <circle cx="140" cy="300" r="2" fill="#E8BE6A" />
+    <circle cx="540" cy="100" r="1.5" fill="#E8BE6A" />
+  </svg>
+</div>
+
+<!-- Page Header -->
+<header class="page-header" style="position: relative; z-index: 1;">
+  <div class="header-eyebrow">Artemis II · Mission Crew · 2025–26</div>
+  <h1 class="page-title">
+    Meet the
+    <span>Crew.</span>
+  </h1>
+  <p class="page-desc">
+    Four astronauts. One mission. The first humans to travel beyond low Earth orbit
+    since Apollo 17 in 1972 — and the first to include a woman and person of color.
+  </p>
+</header>
+
+<!-- Mission bar -->
+<div class="mission-bar">
+  <div class="mbar-item reveal">
+    <span class="mbar-val">4</span>
+    <span class="mbar-key">Crew Members</span>
+  </div>
+  <div class="mbar-item reveal reveal-delay-1">
+    <span class="mbar-val">~10</span>
+    <span class="mbar-key">Mission Days</span>
+  </div>
+  <div class="mbar-item reveal reveal-delay-2">
+    <span class="mbar-val">1.4M</span>
+    <span class="mbar-key">Miles Traveled</span>
+  </div>
+  <div class="mbar-item reveal reveal-delay-3">
+    <span class="mbar-val">3</span>
+    <span class="mbar-key">Space Agencies</span>
+  </div>
+  <div class="mbar-item reveal reveal-delay-4">
+    <span class="mbar-val">1st</span>
+    <span class="mbar-key">Crewed Lunar Flyby</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- CREW section -->
+<div class="crew-section">
+  <div class="section-label reveal">Mission Crew — Artemis II</div>
+
+  <!-- Commander — Reid Wiseman -->
+  <div class="crew-commander reveal">
+    <div class="crew-avatar-wrap">
+      <svg class="avatar-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="spacesuit-g1" cx="50%" cy="40%" r="55%">
+            <stop offset="0%" stop-color="#D8D4CE"/>
+            <stop offset="100%" stop-color="#8A8680"/>
+          </radialGradient>
+          <radialGradient id="visor-g1" cx="40%" cy="35%" r="60%">
+            <stop offset="0%" stop-color="#4A7898"/>
+            <stop offset="100%" stop-color="#0A1C2E"/>
+          </radialGradient>
+        </defs>
+        <!-- Background -->
+        <rect width="400" height="400" fill="#0A1828"/>
+        <!-- Stars -->
+        <circle cx="40" cy="30" r="1" fill="white" opacity="0.6"/>
+        <circle cx="360" cy="60" r="1.5" fill="white" opacity="0.4"/>
+        <circle cx="300" cy="20" r="1" fill="white" opacity="0.7"/>
+        <circle cx="70" cy="320" r="1" fill="white" opacity="0.5"/>
+        <circle cx="340" cy="300" r="1.2" fill="white" opacity="0.6"/>
+        <!-- Earth glimpse -->
+        <ellipse cx="340" cy="60" rx="80" ry="80" fill="#1A4A7A" opacity="0.5"/>
+        <ellipse cx="340" cy="60" rx="80" ry="80" fill="none" stroke="#2A6AA0" stroke-width="1"/>
+        <ellipse cx="320" cy="40" rx="25" ry="15" fill="#2A7A30" opacity="0.4"/>
+        <!-- Suit body -->
+        <ellipse cx="200" cy="340" rx="120" ry="90" fill="url(#spacesuit-g1)"/>
+        <!-- Suit torso -->
+        <rect x="110" y="220" width="180" height="130" rx="20" fill="url(#spacesuit-g1)"/>
+        <!-- Helmet -->
+        <ellipse cx="200" cy="190" rx="85" ry="90" fill="#C8C4BE"/>
+        <!-- Visor -->
+        <ellipse cx="200" cy="195" rx="58" ry="55" fill="url(#visor-g1)"/>
+        <ellipse cx="200" cy="195" rx="58" ry="55" fill="none" stroke="#4A8AB8" stroke-width="2" opacity="0.5"/>
+        <!-- Reflection in visor -->
+        <ellipse cx="178" cy="175" rx="18" ry="12" fill="white" opacity="0.08" transform="rotate(-20, 178, 175)"/>
+        <!-- Helmet ring -->
+        <ellipse cx="200" cy="270" rx="88" ry="16" fill="#A0A09A" opacity="0.8"/>
+        <!-- PLSS backpack hint -->
+        <rect x="310" y="230" width="30" height="70" rx="5" fill="#9A9892" opacity="0.6"/>
+        <!-- NASA patch area -->
+        <circle cx="155" cy="255" r="20" fill="#1A3A6A" opacity="0.8"/>
+        <circle cx="155" cy="255" r="18" stroke="#C89B3C" stroke-width="1.5" fill="none"/>
+        <text x="155" y="260" text-anchor="middle" fill="#C89B3C" font-size="7" font-family="monospace" font-weight="bold">NASA</text>
+        <!-- Gold accent line on suit -->
+        <line x1="120" y1="240" x2="280" y2="240" stroke="#C89B3C" stroke-width="1" opacity="0.4"/>
+        <!-- Suit sleeves -->
+        <ellipse cx="110" cy="270" rx="25" ry="50" fill="#C0BCBA" opacity="0.9"/>
+        <ellipse cx="290" cy="270" rx="25" ry="50" fill="#C0BCBA" opacity="0.9"/>
+        <!-- Name plate -->
+        <rect x="148" y="270" width="104" height="22" rx="3" fill="#0A1828" opacity="0.7"/>
+        <text x="200" y="285" text-anchor="middle" fill="#E8BE6A" font-size="9" font-family="monospace" letter-spacing="2">WISEMAN</text>
+      </svg>
+    </div>
+    <div class="crew-info">
+      <div class="crew-role">Commander</div>
+      <h2 class="crew-name">Reid<br/>Wiseman</h2>
+      <div class="crew-agency">NASA — U.S. Navy Captain</div>
+      <p class="crew-bio">
+        A veteran of the International Space Station's Expedition 41, Reid Wiseman
+        logged 165 days in space and served as NASA's Chief of the Astronaut Office.
+        He brings exceptional leadership experience to command humanity's first crewed
+        lunar mission in over five decades.
+      </p>
+      <div class="crew-milestone">Mission Commander — Artemis II</div>
+      <ul class="crew-facts">
+        <li>
+          <span class="fact-label">Born</span>
+          <span class="fact-val">Baltimore, Maryland, 1975</span>
+        </li>
+        <li>
+          <span class="fact-label">Selected</span>
+          <span class="fact-val">NASA Class of 2009</span>
+        </li>
+        <li>
+          <span class="fact-label">EVAs</span>
+          <span class="fact-val">2 spacewalks, 13 hrs 5 mins</span>
+        </li>
+        <li>
+          <span class="fact-label">Background</span>
+          <span class="fact-val">Engineering, F/A-18 pilot, Navy test pilot</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Trio: Victor Glover, Christina Koch, Jeremy Hansen -->
+  <div class="crew-trio">
+
+    <!-- Victor Glover -->
+    <div class="crew-card reveal">
+      <div class="card-avatar">
+        <svg width="100%" height="260" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="suit-g2" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#D0CCC6"/>
+              <stop offset="100%" stop-color="#807C78"/>
+            </radialGradient>
+            <radialGradient id="visor-g2" cx="40%" cy="35%" r="60%">
+              <stop offset="0%" stop-color="#3A5A7A"/>
+              <stop offset="100%" stop-color="#081422"/>
+            </radialGradient>
+          </defs>
+          <rect width="400" height="260" fill="#060E1C"/>
+          <circle cx="50" cy="40" r="1" fill="white" opacity="0.5"/>
+          <circle cx="350" cy="25" r="1.5" fill="white" opacity="0.4"/>
+          <circle cx="370" cy="200" r="1" fill="white" opacity="0.6"/>
+          <!-- Moon corner -->
+          <circle cx="360" cy="30" r="45" fill="#6A6460" opacity="0.15"/>
+          <!-- Suit -->
+          <ellipse cx="200" cy="290" rx="110" ry="70" fill="url(#suit-g2)"/>
+          <rect x="110" y="160" width="180" height="110" rx="20" fill="url(#suit-g2)"/>
+          <!-- Helmet -->
+          <ellipse cx="200" cy="130" rx="80" ry="84" fill="#C4C0BA"/>
+          <ellipse cx="200" cy="134" rx="54" ry="52" fill="url(#visor-g2)"/>
+          <ellipse cx="200" cy="134" rx="54" ry="52" fill="none" stroke="#4A7AAA" stroke-width="1.5" opacity="0.6"/>
+          <ellipse cx="180" cy="115" rx="16" ry="10" fill="white" opacity="0.07" transform="rotate(-20, 180, 115)"/>
+          <ellipse cx="200" cy="206" rx="82" ry="14" fill="#989490" opacity="0.8"/>
+          <!-- Patch -->
+          <circle cx="155" cy="195" r="18" fill="#1A2A5A" opacity="0.9"/>
+          <circle cx="155" cy="195" r="16" stroke="#C89B3C" stroke-width="1.2" fill="none"/>
+          <text x="155" y="199" text-anchor="middle" fill="#C89B3C" font-size="6" font-family="monospace" font-weight="bold">NASA</text>
+          <!-- Arms -->
+          <ellipse cx="110" cy="200" rx="23" ry="44" fill="#BCBAB6" opacity="0.9"/>
+          <ellipse cx="290" cy="200" rx="23" ry="44" fill="#BCBAB6" opacity="0.9"/>
+          <!-- Name -->
+          <rect x="152" y="210" width="96" height="20" rx="3" fill="#060E1C" opacity="0.8"/>
+          <text x="200" y="224" text-anchor="middle" fill="#E8BE6A" font-size="8" font-family="monospace" letter-spacing="2">GLOVER</text>
+        </svg>
+      </div>
+      <div class="card-info">
+        <div class="card-role">Pilot</div>
+        <div class="card-name">Victor Glover</div>
+        <div class="card-agency">NASA — U.S. Navy Commander</div>
+        <p class="card-bio">
+          Victor Glover flew to the ISS on SpaceX Crew Dragon in 2020, becoming the
+          first Black astronaut to serve a long-duration mission aboard the station.
+          As pilot of Artemis II, he makes history again.
+        </p>
+        <span class="card-milestone">First Black astronaut on lunar mission</span>
+      </div>
+    </div>
+
+    <!-- Christina Koch -->
+    <div class="crew-card reveal reveal-delay-1">
+      <div class="card-avatar">
+        <svg width="100%" height="260" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="suit-g3" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#D4D0CC"/>
+              <stop offset="100%" stop-color="#848280"/>
+            </radialGradient>
+            <radialGradient id="visor-g3" cx="45%" cy="32%" r="58%">
+              <stop offset="0%" stop-color="#5A7890"/>
+              <stop offset="100%" stop-color="#0C1C2C"/>
+            </radialGradient>
+          </defs>
+          <rect width="400" height="260" fill="#080E1C"/>
+          <circle cx="60" cy="20" r="1.2" fill="white" opacity="0.6"/>
+          <circle cx="330" cy="50" r="1" fill="white" opacity="0.5"/>
+          <circle cx="380" cy="180" r="1.5" fill="white" opacity="0.4"/>
+          <!-- Aurora hint -->
+          <ellipse cx="100" cy="10" rx="180" ry="40" fill="#1A4A3A" opacity="0.15"/>
+          <!-- Suit -->
+          <ellipse cx="200" cy="290" rx="110" ry="70" fill="url(#suit-g3)"/>
+          <rect x="112" y="158" width="176" height="112" rx="20" fill="url(#suit-g3)"/>
+          <!-- Helmet -->
+          <ellipse cx="200" cy="128" rx="80" ry="84" fill="#C8C4C0"/>
+          <ellipse cx="200" cy="133" rx="54" ry="52" fill="url(#visor-g3)"/>
+          <ellipse cx="200" cy="133" rx="54" ry="52" fill="none" stroke="#5A8AAA" stroke-width="1.5" opacity="0.5"/>
+          <ellipse cx="182" cy="113" rx="17" ry="10" fill="white" opacity="0.09" transform="rotate(-25, 182, 113)"/>
+          <ellipse cx="200" cy="204" rx="83" ry="13" fill="#9A9896" opacity="0.8"/>
+          <!-- Patch -->
+          <circle cx="155" cy="194" r="18" fill="#1A3060" opacity="0.9"/>
+          <circle cx="155" cy="194" r="16" stroke="#C89B3C" stroke-width="1.2" fill="none"/>
+          <text x="155" y="198" text-anchor="middle" fill="#C89B3C" font-size="6" font-family="monospace" font-weight="bold">NASA</text>
+          <!-- Arms -->
+          <ellipse cx="112" cy="198" rx="23" ry="44" fill="#C0BEBA" opacity="0.9"/>
+          <ellipse cx="288" cy="198" rx="23" ry="44" fill="#C0BEBA" opacity="0.9"/>
+          <!-- Name -->
+          <rect x="152" y="208" width="96" height="20" rx="3" fill="#080E1C" opacity="0.8"/>
+          <text x="200" y="222" text-anchor="middle" fill="#E8BE6A" font-size="8" font-family="monospace" letter-spacing="2">KOCH</text>
+        </svg>
+      </div>
+      <div class="card-info">
+        <div class="card-role">Mission Specialist 1</div>
+        <div class="card-name">Christina Hammock Koch</div>
+        <div class="card-agency">NASA — Electrical Engineer</div>
+        <p class="card-bio">
+          Christina Koch holds the record for the longest single spaceflight by a woman —
+          328 days aboard the ISS — and performed the first all-female spacewalk.
+          She becomes the first woman to travel to the Moon.
+        </p>
+        <span class="card-milestone">First woman on a lunar mission</span>
+      </div>
+    </div>
+
+    <!-- Jeremy Hansen -->
+    <div class="crew-card reveal reveal-delay-2">
+      <div class="card-avatar">
+        <svg width="100%" height="260" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="suit-g4" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#CCCAC4"/>
+              <stop offset="100%" stop-color="#7C7A76"/>
+            </radialGradient>
+            <radialGradient id="visor-g4" cx="42%" cy="33%" r="57%">
+              <stop offset="0%" stop-color="#4A6A88"/>
+              <stop offset="100%" stop-color="#0A182A"/>
+            </radialGradient>
+          </defs>
+          <rect width="400" height="260" fill="#050C1A"/>
+          <circle cx="80" cy="30" r="1" fill="white" opacity="0.6"/>
+          <circle cx="320" cy="40" r="1.5" fill="white" opacity="0.4"/>
+          <circle cx="360" cy="220" r="1" fill="white" opacity="0.5"/>
+          <!-- Canadian maple leaf hint -->
+          <text x="350" y="60" fill="#C84A3A" font-size="22" opacity="0.15">🍁</text>
+          <!-- Suit -->
+          <ellipse cx="200" cy="290" rx="110" ry="70" fill="url(#suit-g4)"/>
+          <rect x="113" y="160" width="174" height="110" rx="20" fill="url(#suit-g4)"/>
+          <!-- Helmet -->
+          <ellipse cx="200" cy="130" rx="80" ry="84" fill="#C6C2BC"/>
+          <ellipse cx="200" cy="134" rx="54" ry="52" fill="url(#visor-g4)"/>
+          <ellipse cx="200" cy="134" rx="54" ry="52" fill="none" stroke="#4A7A9A" stroke-width="1.5" opacity="0.6"/>
+          <ellipse cx="180" cy="115" rx="16" ry="10" fill="white" opacity="0.08" transform="rotate(-22, 180, 115)"/>
+          <ellipse cx="200" cy="206" rx="82" ry="13" fill="#969492" opacity="0.8"/>
+          <!-- CSA patch -->
+          <circle cx="155" cy="194" r="18" fill="#180A0A" opacity="0.9"/>
+          <circle cx="155" cy="194" r="16" stroke="#C84A3A" stroke-width="1.5" fill="none"/>
+          <text x="155" y="198" text-anchor="middle" fill="#E84A3A" font-size="6" font-family="monospace" font-weight="bold">CSA</text>
+          <!-- Arms -->
+          <ellipse cx="113" cy="198" rx="23" ry="43" fill="#BAB8B4" opacity="0.9"/>
+          <ellipse cx="287" cy="198" rx="23" ry="43" fill="#BAB8B4" opacity="0.9"/>
+          <!-- Name -->
+          <rect x="150" y="210" width="100" height="20" rx="3" fill="#050C1A" opacity="0.8"/>
+          <text x="200" y="224" text-anchor="middle" fill="#E8BE6A" font-size="8" font-family="monospace" letter-spacing="2">HANSEN</text>
+        </svg>
+      </div>
+      <div class="card-info">
+        <div class="card-role">Mission Specialist 2</div>
+        <div class="card-name">Jeremy Hansen</div>
+        <div class="card-agency">CSA — Royal Canadian Air Force</div>
+        <p class="card-bio">
+          Canada's contribution to the Artemis program, Jeremy Hansen is a fighter
+          pilot and astronaut who will become the first Canadian — and first
+          non-American — to travel to the Moon.
+        </p>
+        <span class="card-milestone">First Canadian on a lunar mission</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Mission trajectory -->
+<div class="trajectory-section">
+  <div class="section-label reveal">Mission Profile</div>
+  <div class="trajectory-header">
+    <h2 class="reveal">The Journey Around the Moon</h2>
+    <p class="reveal reveal-delay-1">
+      A 10-day voyage that takes the crew farther from Earth than any humans
+      since Gene Cernan and Harrison Schmitt departed the lunar surface in 1972.
+      No landing — but a critical demonstration before Artemis III touches down.
+    </p>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-item reveal">
+      <div class="tl-day">Day 1</div>
+      <div class="tl-dot"><div class="tl-dot-inner"></div></div>
+      <div class="tl-content">
+        <div class="tl-event">Launch — Kennedy Space Center, FL</div>
+        <div class="tl-detail">Space Launch System lifts off from Launch Complex 39B, carrying Orion and the crew into Earth orbit before the upper stage fires toward the Moon.</div>
+      </div>
+    </div>
+    <div class="tl-item reveal reveal-delay-1">
+      <div class="tl-day">Day 2–3</div>
+      <div class="tl-dot"><div class="tl-dot-inner"></div></div>
+      <div class="tl-content">
+        <div class="tl-event">Trans-Lunar Injection</div>
+        <div class="tl-detail">Orion's European Service Module fires to propel the spacecraft out of Earth orbit and onto a trajectory toward the Moon. The crew performs critical systems checks.</div>
+      </div>
+    </div>
+    <div class="tl-item reveal reveal-delay-2">
+      <div class="tl-day">Day 4–5</div>
+      <div class="tl-dot"><div class="tl-dot-inner"></div></div>
+      <div class="tl-content">
+        <div class="tl-event">Lunar Approach &amp; Closest Pass</div>
+        <div class="tl-detail">Orion swings around the far side of the Moon, passing just 8,900 km above the surface — closer than any crewed spacecraft since Apollo 17. The crew loses radio contact temporarily.</div>
+      </div>
+    </div>
+    <div class="tl-item reveal reveal-delay-1">
+      <div class="tl-day">Day 6–8</div>
+      <div class="tl-dot"><div class="tl-dot-inner"></div></div>
+      <div class="tl-content">
+        <div class="tl-event">Distant Retrograde Orbit &amp; Return Burn</div>
+        <div class="tl-detail">Orion enters a distant retrograde orbit before the crew performs a powered flyby maneuver, slingshotting back toward Earth on a free-return trajectory.</div>
+      </div>
+    </div>
+    <div class="tl-item reveal reveal-delay-2">
+      <div class="tl-day">Day 10</div>
+      <div class="tl-dot"><div class="tl-dot-inner"></div></div>
+      <div class="tl-content">
+        <div class="tl-event">Splashdown — Pacific Ocean</div>
+        <div class="tl-detail">Orion re-enters Earth's atmosphere at 40,000 km/h, deploying parachutes before splashdown off the coast of San Diego. USS San Diego recovers crew and capsule.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Readiness -->
+<div class="readiness-section">
+  <div class="section-label reveal">Mission Readiness Status</div>
+  <div class="readiness-grid">
+    <div class="readiness-item reveal">
+      <div class="readiness-bar-wrap">
+        <svg class="readiness-svg" viewBox="0 0 60 60">
+          <circle class="r-track" cx="30" cy="30" r="24" />
+          <circle class="r-fill" cx="30" cy="30" r="24" stroke-dasharray="144 151" />
+        </svg>
+        <div class="r-label">95%</div>
+      </div>
+      <div class="readiness-name">Orion Capsule</div>
+      <div class="readiness-detail">Systems integration complete</div>
+    </div>
+    <div class="readiness-item reveal reveal-delay-1">
+      <div class="readiness-bar-wrap">
+        <svg class="readiness-svg" viewBox="0 0 60 60">
+          <circle class="r-track" cx="30" cy="30" r="24" />
+          <circle class="r-fill" cx="30" cy="30" r="24" stroke-dasharray="136 151" />
+        </svg>
+        <div class="r-label">90%</div>
+      </div>
+      <div class="readiness-name">SLS Rocket</div>
+      <div class="readiness-detail">Core stage preparations</div>
+    </div>
+    <div class="readiness-item reveal reveal-delay-2">
+      <div class="readiness-bar-wrap">
+        <svg class="readiness-svg" viewBox="0 0 60 60">
+          <circle class="r-track" cx="30" cy="30" r="24" />
+          <circle class="r-fill" cx="30" cy="30" r="24" stroke-dasharray="151 151" />
+        </svg>
+        <div class="r-label">100%</div>
+      </div>
+      <div class="readiness-name">Crew Training</div>
+      <div class="readiness-detail">All crew certified</div>
+    </div>
+    <div class="readiness-item reveal reveal-delay-3">
+      <div class="readiness-bar-wrap">
+        <svg class="readiness-svg" viewBox="0 0 60 60">
+          <circle class="r-track" cx="30" cy="30" r="24" />
+          <circle class="r-fill" cx="30" cy="30" r="24" stroke-dasharray="128 151" />
+        </svg>
+        <div class="r-label">85%</div>
+      </div>
+      <div class="readiness-name">Launch Complex</div>
+      <div class="readiness-detail">Launch pad upgrades ongoing</div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="page-footer">
+  <a href="artemis-landing.html" class="back-link">Back to Mission</a>
+  <div class="footer-note">NASA · CSA · Artemis II Crew · 2025–26</div>
+</footer>
+
+<script>
+// Starfield
+(function() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function createStars() {
+    stars = [];
+    const count = Math.floor((canvas.width * canvas.height) / 3500);
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.1 + 0.2,
+        op: Math.random() * 0.6 + 0.15,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.004 + 0.002
+      });
+    }
+  }
+
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    t += 0.016;
+    for (const s of stars) {
+      const alpha = s.op * (0.5 + 0.5 * Math.sin(s.phase + t * s.speed * 100));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  createStars();
+  draw();
+  window.addEventListener('resize', () => { resize(); createStars(); });
+})();
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
